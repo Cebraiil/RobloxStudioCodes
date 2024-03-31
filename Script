@@ -48,18 +48,18 @@ local function gameLoop()
 		wait(1)
 		status.Value = "Not Enough Players! "..PLAYERS_NEEDED_TO_START.." Players Needed!"
 	until Players.NumPlayers >= PLAYERS_NEEDED_TO_START
-	
+
 	if Players.NumPlayers >= PLAYERS_NEEDED_TO_START then
 		for i = INTERMISSION_TIME, 0, -1 do
 			wait(1)
 			status.Value = "Game starting in "..i.." seconds!"
 		end
-		
+
 		local randomPlayerIndex = math.random(1, #Players:GetPlayers())
 		local seeker
-		
+
 		table.clear(GamePlayers)
-		
+
 		for i, player in pairs(Players:GetPlayers()) do 
 			if i == randomPlayerIndex then 
 				player:FindFirstChild("IsSeeker").Value = true
@@ -69,18 +69,18 @@ local function gameLoop()
 				table.insert(GamePlayers, player)
 			end
 		end
-		
+
 		ReplicatedStorage.Remotes.ShowSeekerText:FireAllClients(seeker)
-		
+
 		seeker.Character.HumanoidRootPart.Anchored = true
-		
+
 		for i = TIME_TO_HIDE, 0, -1 do
 			wait(1)
 			status.Value = "The Seeker will be Released in "..i.." Seconds!"
 		end
-		
+
 		seeker.Character.HumanoidRootPart.Anchored = false
-		
+
 		for i, part in pairs(seeker.Character:GetChildren()) do
 			if part:IsA("MeshPart") or part:IsA("BasePart") then 
 				part.Touched:Connect(function(hit)
@@ -100,7 +100,7 @@ local function gameLoop()
 				end)
 			end
 		end
-		
+
 		for i = GAME_TIME, 0, -1 do
 			wait(1)
 			if #GamePlayers < 1 then 
@@ -114,13 +114,13 @@ local function gameLoop()
 			end
 			status.Value = "The Game is Ending in "..i.." Seconds! "..#GamePlayers.." Players Remaining!"
 		end
-		
+
 		ReplicatedStorage.Remotes.ShowRewardText:FireAllClients("Hiders")
 		for i, v in ipairs(GamePlayers) do 
 			v.leaderstats.Wins.Value = v.leaderstats.Wins.Value + 1
 			v.leaderstats.Points.Value = v.leaderstats.Points.Value + Points_TO_GIVE_HIDERS
 		end
-		
+
 		setUpGame()
 		gameLoop()
 	end
