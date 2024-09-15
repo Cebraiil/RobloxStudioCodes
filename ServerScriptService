@@ -1,0 +1,130 @@
+local Players = game:GetService("Players")
+local ServerStorage = game:GetService("ServerStorage")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local PlayerData = ServerStorage:WaitForChild("Player_data")
+local status = game.Workspace:WaitForChild("Status")
+local GamePlayers = {}
+
+
+local INTERMISSION_TIME = 15
+local GAME_TIME = 15
+local TIME_TO_HIDE = 15
+local PLAYERS_NEEDED_TO_START = 2
+local Points_TO_GIVE_HIDERS = 15
+local Points_TO_GIVE_SEEKERS = 15
+
+
+game.Players.PlayerAdded:Connect(function(player)
+	player.CharacterAdded:Connect(function(character)
+		character.Humanoid.WalkSpeed = 35
+	end)
+end)
+
+
+local function playerAdded(player)
+	for index, instance in pairs(PlayerData:GetChildren()) do
+		local clonedInstance = instance:Clone()
+		clonedInstance.Parent = player
+	end
+end
+
+
+local function setUpGame()
+	status.Value = ""
+	for i,v in pairs(Players:GetPlayers()) do
+		v:LoadCharacter()
+		table.clear(GamePlayers)
+	end
+	for i, player in pairs(Players:GetPlayers()) do
+		if player:FindFirstChild("IsSeeker").Value == true then 
+			player:FindFirstChild("IsSeeker").Value = false
+		end
+	end
+end
+
+
+local function gameLoop()
+	repeat
+		wait(1)
+		status.Value = "Not Enough Players! "..PLAYERS_NEEDED_TO_START.." Players Needed!"
+	until Players.NumPlayers >= PLAYERS_NEEDED_TO_START
+
+	if Players.NumPlayers >= PLAYERS_NEEDED_TO_START then
+		for i = INTERMISSION_TIME, 0, -1 do
+			wait(1)
+			status.Value = "Game starting in "..i.." seconds!"
+		end
+
+		local randomPlayerIndex = math.random(1, #Players:GetPlayers())
+		local seeker
+
+		table.clear(GamePlayers)
+
+		for i, player in pairs(Players:GetPlayers()) do 
+			if i == randomPlayerIndex then 
+				player:FindFirstChild("IsSeeker").Value = true
+				seeker = player
+			else 
+				player:FindFirstChild("IsSeeker").Value = false
+				table.insert(GamePlayers, player)
+			end
+		end
+
+		ReplicatedStorage.Remotes.ShowSeekerText:FireAllClients(seeker)
+
+		seeker.Character.HumanoidRootPart.Anchored = true
+
+		for i = TIME_TO_HIDE, 0, -1 do
+			wait(1)
+			status.Value = "The Seeker will be Released in "..i.." Seconds!"
+		end
+
+		seeker.Character.HumanoidRootPart.Anchored = false
+
+		for i, part in pairs(seeker.Character:GetChildren()) do
+			if part:IsA("MeshPart") or part:IsA("BasePart") then 
+				part.Touched:Connect(function(hit)
+					if hit.Parent:FindFirstChild("Humanoid") then
+						local player = Players:GetPlayerFromCharacter(hit.Parent)
+						if player and not player:FindFirstChild("IsSeeker").Value then
+							hit.Parent:SetPrimaryPartCFrame(workspace.SpawnLocation.CFrame)
+							player.Character.HumanoidRootPart.Anchored = true
+							for i, v in pairs(GamePlayers) do
+								if v == player then
+									table.remove(GamePlayers, i)
+									break
+								end
+							end
+						end
+					end
+				end)
+			end
+		end
+
+		for i = GAME_TIME, 0, -1 do
+			wait(1)
+			if #GamePlayers < 1 then 
+				ReplicatedStorage.Remotes.ShowRewardText:FireAllClients("Seeker")
+				seeker.leaderstats.Wins.Value = seeker.leaderstats.Wins.Value + 1
+				seeker.leaderstats.Points.Value = seeker.leaderstats.Points.Value + Points_TO_GIVE_SEEKERS
+
+				setUpGame()
+				gameLoop()
+				return
+			end
+			status.Value = "The Game is Ending in "..i.." Seconds! "..#GamePlayers.." Players Remaining!"
+		end
+
+		ReplicatedStorage.Remotes.ShowRewardText:FireAllClients("Hiders")
+		for i, v in ipairs(GamePlayers) do 
+			v.leaderstats.Wins.Value = v.leaderstats.Wins.Value + 1
+			v.leaderstats.Points.Value = v.leaderstats.Points.Value + Points_TO_GIVE_HIDERS
+		end
+
+		setUpGame()
+		gameLoop()
+	end
+end
+
+Players.PlayerAdded:Connect(playerAdded)
+gameLoop()

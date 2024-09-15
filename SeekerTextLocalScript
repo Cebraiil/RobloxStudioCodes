@@ -1,0 +1,23 @@
+local player = game.Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+ReplicatedStorage.Remotes.ShowSeekerText.OnClientEvent:Connect(function(seeker)
+	if player == seeker then
+		script.Parent.Text = "You Are The Seeker!"
+	else 
+		script.Parent.Text = seeker.Name.." is the Seeker!"
+	end
+
+	script.Parent.Visible = true
+	wait(1.5)
+
+	for i = 1,20 do
+		script.Parent.TextTransparency += 0.05
+		script.Parent.TextStrokeTransparency += 0.05
+	end
+
+	script.Parent.Visible = false
+
+	script.Parent.TextTransparency = 0
+	script.Parent.TextStrokeTransparency = 0
+end)
